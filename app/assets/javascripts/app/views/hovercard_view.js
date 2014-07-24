@@ -1,4 +1,3 @@
-
 app.views.Hovercard = Backbone.View.extend({
   el: '#hovercard_container',
 
@@ -23,7 +22,7 @@ app.views.Hovercard = Backbone.View.extend({
   },
 
   href: function() {
-    return this.$el.parent().attr('href');
+    return (typeof this._href !='undefined') ? this._href : this.$el.parent().attr('href');
   },
 
   _mouseenterHandler: function(event) {
@@ -44,6 +43,10 @@ app.views.Hovercard = Backbone.View.extend({
   },
 
   _mouseleaveHandler: function(event) {
+    event.stopPropagation();
+    var relatedTarget = (typeof event.toElement!='undefined') ? $(event.toElement) : $(event.relatedTarget); // toElement = IE support, relatedTarget = other browsers
+    if(relatedTarget.attr('id')=='hovercard_container')
+      return false;
     if(this.active == false) { return false }
     this.show_me = false;
     if( this.$el.is(':visible') ) {
@@ -64,17 +67,19 @@ app.views.Hovercard = Backbone.View.extend({
       // mouse has left element
       return;
     }
-
     hc.hide();
-    hc.prependTo(el);
-    this._positionHovercard();
+    hc.appendTo(el.parents('#main_stream'));
+    this._href = el.attr('href');
+    this._positionHovercard(el);
+    this._rel = el;
+    hc.bind('mouseleave', this._mouseleaveHandler.bind(this));
+    el.parents('.media').bind('mouseleave', this._mouseleaveHandler.bind(this));
     this._populateHovercard();
   }, 500),
 
   _populateHovercard: function() {
     var href = this.href();
     href += "/hovercard.json";
-
     var self = this;
     $.get(href, function(person){
       if( !person || person.length == 0 ) {
@@ -113,13 +118,14 @@ app.views.Hovercard = Backbone.View.extend({
     var aspect_membership = new app.views.AspectMembership({el: self.dropdown_container});
   },
 
-  _positionHovercard: function() {
-    var p = this.$el.parent();
+  _positionHovercard: function(element) {
+    var p = element;
     var p_pos = p.position();
     var p_height = p.height();
+    var mouse =
 
     this.$el.css({
-      top: p_pos.top + p_height - 25,
+      top: p_pos.top + p_height,
       left: p_pos.left
     });
   }
